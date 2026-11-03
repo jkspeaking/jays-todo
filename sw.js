@@ -1,5 +1,5 @@
 // Offline cache for Jay's To Do List. Bump VERSION whenever you upload a new version of the app.
-const VERSION = "jtd-2026-11-03-4";
+const VERSION = "jtd-2026-11-03-5";
 const SHELL = [
   "./", "./index.html", "./config.js", "./manifest.webmanifest",
   "./icons/icon.svg", "./icons/favicon.svg", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/maskable-512.png",

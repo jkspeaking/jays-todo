@@ -328,6 +328,8 @@ a.btn { text-decoration: none; }
 <body>
 <script src="config.js"></script>
 <div id="app"><div class="loading">Loading your lists…</div></div>
+<!-- Kept outside #app so screen refreshes while the file picker is open can't throw the chosen file away. -->
+<input type="file" id="import-file" accept=".json,application/json" hidden>
 
 <script>
 (() => {
@@ -1244,7 +1246,7 @@ function renderModal() {
       <div class="set-row"><div><b>Sync</b><small>${cloud ? `GitHub · ${esc(g.owner)}/${esc(g.repo)}` : "Off. Lists stay on this device."}</small></div>${cloud ? `<button class="btn" data-a="disconnect">Disconnect</button>` : `<button class="btn primary" data-a="connect">Connect GitHub</button>`}</div>
       ${cloud ? `<div class="set-row"><div><b>Status</b><small>${S.syncError ? esc(S.syncError) + " " : ""}${!S.online ? "Offline. " : ""}${n ? n + " change" + (n === 1 ? "" : "s") + " waiting to sync. " : S.syncError ? "" : "Everything is synced. "}${S.lastSyncAt ? "Last synced " + ago(S.lastSyncAt) + "." : ""}</small></div>${S.keyBad ? `<button class="btn primary" data-a="reconnect">Reconnect</button>` : `<button class="btn" data-a="sync-now" ${S.online ? "" : "disabled"}>Sync now</button>`}</div>
       <div class="set-row"><div><b>History</b><small>GitHub keeps every version of your lists, so you can look back or undo a mistake there.</small></div><a class="btn" href="https://github.com/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/commits" target="_blank" rel="noopener">Open</a></div>` : ""}
-      <div class="set-row"><div><b>Backup</b><small>Save all your lists as a file, or bring lists in from a backup file.</small></div><div class="row"><button class="btn" data-a="export">Export</button><label class="btn" for="import-file">Import</label><input type="file" id="import-file" accept=".json,application/json" hidden></div></div>
+      <div class="set-row"><div><b>Backup</b><small>Save all your lists as a file, or bring lists in from a backup file.</small></div><div class="row"><button class="btn" data-a="export">Export</button><label class="btn" for="import-file">Import</label></div></div>
       <div class="set-row"><div><b>Install as an app</b><small>iPhone and iPad: open in Safari, tap Share, then Add to Home Screen. Mac: in Safari choose File › Add to Dock; in Chrome click the install icon in the address bar.</small></div></div>
       <div class="acts"><button class="btn primary" data-a="m-close">Done</button></div>`;
   }
@@ -1484,7 +1486,7 @@ function exportBackup() {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 10000);
 }
-app.addEventListener("change", async (e) => {
+document.getElementById("import-file").addEventListener("change", async (e) => {
   if (e.target.id !== "import-file" || !e.target.files[0]) return;
   try {
     const data = JSON.parse(await e.target.files[0].text());
