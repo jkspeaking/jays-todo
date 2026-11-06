@@ -274,8 +274,16 @@ textarea.inp { resize: vertical; min-height: 72px; field-sizing: content; }
 .rcard.on { border-color: var(--accent); background: var(--accent-soft); }
 .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
 .import-sum { font-size: 13px; color: var(--muted); }
-.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--panel); padding: 9px 16px; border-radius: 10px; z-index: 50; font-size: 13.5px; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--panel); padding: 9px 16px; border-radius: 10px; z-index: 50; font-size: 13.5px; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 .loading { padding: 64px 16px; text-align: center; color: var(--muted); }
+.fab { position: fixed; right: calc(22px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 20; display: inline-flex; align-items: center; gap: 6px; padding: 12px 18px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; box-shadow: var(--shadow); }
+.fab:hover { filter: brightness(1.07); }
+.fab svg { width: 18px; height: 18px; }
+.app.has-detail ~ .fab { display: none; }
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); font-weight: 500; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+select.inp { appearance: auto; padding: 7px 8px; color: var(--fg); }
+.nt-note { font-size: 12.5px; color: var(--muted); margin-top: -6px; }
 
 /* ---------- Phone ---------- */
 @media (max-width: 760px) {
@@ -912,7 +920,7 @@ function paint() {
     ${renderSide()}
     <main class="main" data-scroll="main"><div class="main-in">${renderMain()}</div></main>
     ${sel ? renderDetail(sel) : ""}
-  </div>${renderMenu()}${renderModal()}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`;
+  </div>${allLists().length && !S.modal ? `<button class="fab" data-a="new-task" aria-label="New task">${I.plus}<span>New task</span></button>` : ""}${renderMenu()}${renderModal()}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`;
 
   for (const el of app.querySelectorAll("[data-scroll]")) if (scrolls[el.dataset.scroll] != null) el.scrollTop = scrolls[el.dataset.scroll];
   restoreFocus(keep);
@@ -1189,8 +1197,8 @@ function renderConnect() {
     <div class="brand big">${LOGO}<div class="brand-name"><b>Jay's</b><span>To Do List</span></div></div>
     <div><h2>Connect to GitHub</h2>
     <p>Your lists sync through a private GitHub repository. Do this once on each device. After that the app works offline too.</p></div>
-    <div class="field"><label class="flabel" for="g-owner">GitHub username</label><input class="inp" id="g-owner" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(c.owner ?? g.owner ?? CFG.githubOwner ?? "")}"></div>
-    <div class="field"><label class="flabel" for="g-repo">Private repository</label><input class="inp" id="g-repo" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(c.repo ?? g.repo ?? CFG.githubRepo ?? "jays-todo-data")}"></div>
+    <div class="field"><label class="flabel" for="g-owner">GitHub username</label><input class="inp" id="g-owner" autocomplete="off" data-1p-ignore data-lpignore="true" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(c.owner ?? g.owner ?? CFG.githubOwner ?? "")}"></div>
+    <div class="field"><label class="flabel" for="g-repo">Private repository</label><input class="inp" id="g-repo" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(c.repo ?? g.repo ?? CFG.githubRepo ?? "jays-todo-data")}"></div>
     <div class="field"><label class="flabel" for="g-token">Access key</label><input class="inp" id="g-token" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…"></div>
     <p class="hint">Make the key on github.com: Settings › Developer settings › Fine-grained tokens. Give it only this repository, with Contents set to Read and write. It stays on this device.</p>
     ${c.msg ? `<div class="auth-msg ${c.err ? "err" : ""}" role="status">${esc(c.msg)}</div>` : ""}
@@ -1240,6 +1248,20 @@ function renderModal() {
       <div class="import-sum">${parsed.length ? `Will add ${n.section} section${n.section === 1 ? "" : "s"}, ${n.task} task${n.task === 1 ? "" : "s"} and ${n.sub} subtask${n.sub === 1 ? "" : "s"}.` : "Nothing to add yet."}</div>
       <div class="acts"><button class="btn" data-a="m-close">Cancel</button><button class="btn primary" data-a="m-ok" ${parsed.length ? "" : "disabled"}>Add to list</button></div>`;
   }
+  else if (m.type === "new-task") {
+    const lists = allLists();
+    const list = getItem(m.listId) || lists[0];
+    const secs = (list && list.sections) || [];
+    const note = m.dueToday ? "It will be due today, unless you type another date." : m.flagged ? "It will be flagged." : "Tip: type “fri”, “tomorrow”, !! for priority or #tag.";
+    body = `<h3>New task</h3>
+      <input class="inp" id="m-name" value="${esc(m.name || "")}" placeholder="What needs doing? e.g. Call Sam fri !!" autocomplete="off" enterkeyhint="done">
+      <div class="nt-note">${note}</div>
+      <div class="field-row">
+        <label class="field">List<select class="inp" id="m-list">${lists.map((l) => `<option value="${l.id}" ${list && l.id === list.id ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
+        <label class="field">Section<select class="inp" id="m-sec" ${secs.length ? "" : "disabled"}><option value="">${secs.length ? "No section" : "None"}</option>${secs.map((s) => `<option value="${s.id}" ${m.secId === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>
+      </div>
+      <div class="acts"><button class="btn" data-a="m-close">Cancel</button><button class="btn primary" data-a="m-ok">Add task</button></div>`;
+  }
   else if (m.type === "settings") {
     const n = outbox.size, cloud = S.mode === "cloud", g = S.gh || {};
     body = `<h3>Settings</h3>
@@ -1269,6 +1291,18 @@ function modalOk() {
     S.modal = null; go({ type: "list", id });
     pendingFocus = `add-${id}-none`; render(); return;
   }
+  if (m.type === "new-task") {
+    const l = getItem(document.getElementById("m-list")?.value || m.listId);
+    if (!name) { pendingFocus = "m-name"; render(); return; }
+    if (l) {
+      const tid = addTask(l, { sectionId: document.getElementById("m-sec")?.value || null, text: name });
+      const t = tid && getItem(tid);
+      if (t && m.dueToday && !t.due) update(t, { due: ymd(new Date()) });
+      if (t && m.flagged && !t.flagged) update(getItem(tid), { flagged: true });
+      store.set("lastList", l.id);
+      S.modal = null; toast(`Added to ${l.name}.`); return;
+    }
+  }
   if (m.type === "rename-list") { const l = getItem(m.listId); if (l && name) update(l, { name }); }
   if (m.type === "add-sec") { const l = getItem(m.listId); if (l) { const sid = addSection(l, name || "New section"); pendingFocus = `add-${l.id}-${sid}`; } }
   if (m.type === "rename-sec") { const l = getItem(m.listId); if (l && name) update(l, { sections: l.sections.map((s) => s.id === m.secId ? { ...s, name } : s) }); }
@@ -1297,6 +1331,14 @@ app.addEventListener("click", (e) => {
     case "tag": go(S.view.type === "tag" && S.view.tag === el.dataset.tag ? { type: "smart", key: "all" } : { type: "tag", tag: el.dataset.tag }); break;
     case "nav": S.nav = true; S.selected = null; render(); break;
     case "new-list": openModal({ type: "new-list", name: "", color: COLORS[allLists().length % COLORS.length], scope: "mine" }); break;
+    case "new-task": {
+      const inList = S.view.type === "list" && getItem(S.view.id);
+      const last = getItem(store.get("lastList", null));
+      const listId = inList ? S.view.id : last && last.kind === "list" ? last.id : allLists()[0]?.id;
+      const smart = S.view.type === "smart" && !S.search.trim() ? S.view.key : null;
+      openModal({ type: "new-task", name: "", listId, secId: null, dueToday: smart === "today", flagged: smart === "flagged" });
+      break;
+    }
     case "example": { const lid = exampleList(); go({ type: "list", id: lid }); break; }
     case "import-new": openModal({ type: "import", text: "", name: "" }); break;
     case "import": openModal({ type: "import", text: "", listId: S.menu ? S.menu.listId : S.view.id }); break;
@@ -1429,7 +1471,10 @@ app.addEventListener("focusout", (e) => {
   if (el.id === "d-title" || el.id === "d-notes") { clearTimeout(debounces[el.id]); commitText(el); }
 });
 app.addEventListener("change", (e) => {
-  const el = e.target, sel = getItem(S.selected); if (!sel) return;
+  const el = e.target;
+  if (el.id === "m-list" && S.modal) { S.modal.listId = el.value; S.modal.secId = null; S.modal.name = document.getElementById("m-name")?.value; render(); return; }
+  if (el.id === "m-sec" && S.modal) { S.modal.secId = el.value || null; return; }
+  const sel = getItem(S.selected); if (!sel) return;
   if (el.id === "d-due") update(sel, el.value ? { due: el.value } : { due: null, time: null });
   if (el.id === "d-time") update(sel, { time: el.value || null });
   if (el.id === "d-sec") update(sel, { sectionId: el.value || null, order: nextOrder(tasksOf(sel.listId).filter((t) => !t.parentId && (t.sectionId || null) === (el.value || null))) });
